@@ -1,6 +1,10 @@
 context("test-survival.R -- Pooled hazards model")
 library(origami)
 
+normalize_rows <- function(x) {
+  sweep(x, 1, rowSums(x), "/")
+}
+
 g0 <- function(W) {
   W1 <- W[, 1]
   W2 <- W[, 2]
@@ -31,7 +35,7 @@ gen_data <- function(n = 1000, p = 4) {
 }
 
 set.seed(1234)
-sim_results <- gen_data(1000)
+sim_results <- gen_data(100)
 data <- sim_results$data
 g0W <- sim_results$truth
 

@@ -32,7 +32,7 @@ Lrnr_screener_coefs <- R6Class(
   classname = "Lrnr_screener_coefs",
   inherit = Lrnr_base, portable = TRUE, class = TRUE,
   public = list(
-    initialize = function(learner, threshold=1e-3, ...) {
+    initialize = function(learner, threshold = 1e-3, ...) {
       params <- args_to_list()
       super$initialize(params = params, ...)
     }
@@ -46,7 +46,7 @@ Lrnr_screener_coefs <- R6Class(
       fit <- learner$train(task)
       coefs <- as.vector(coef(fit))
       covs <- task$nodes$covariates
-      selected <- covs[which(abs(coefs)>self$params$threshold)]
+      selected <- covs[which(abs(coefs) > self$params$threshold)]
 
       fit_object <- list(selected = selected)
       return(fit_object)

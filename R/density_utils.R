@@ -31,6 +31,7 @@ discretize_variable <- function(x, type = c("equal_range", "equal_mass"), n_bins
   # for predict method, only need to assign observations to existing intervals
   # NOTE: findInterval() and cut() might return slightly different results...
   bin_id <- findInterval(x, breaks, all.inside = TRUE)
+  x_discrete_int <- breaks[bin_id]
   x_in_bin <- x - breaks[bin_id]
-  list(x_discrete = bin_id, x_in_bin = x_in_bin, breaks = breaks)
+  list(x_discrete = bin_id, x_in_bin = x_in_bin, x_discrete_int = x_discrete_int, breaks = breaks)
 }

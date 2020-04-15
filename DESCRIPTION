@@ -42,7 +42,8 @@ Imports:
     stringr,
     digest,
     imputeMissings,
-    dplyr
+    dplyr,
+    popbio
 Suggests:
     testthat,
     rmarkdown,
@@ -85,7 +86,8 @@ Suggests:
     RFCDE,
     caret,
     mgcv,
-    hts
+    hts,
+    quantregForest
 Remotes:
     github::osofr/condensier,
     github::tlverse/hal9001,
