@@ -33,9 +33,15 @@ lrnr_xgboost <- make_learner(Lrnr_xgboost)
 lrnr_glm <- make_learner(Lrnr_glm_fast)
 cdf_xgboost <- Lrnr_cdf_pooled_hazards$new(lrnr_xgboost)
 cdf_glm <- Lrnr_cdf_pooled_hazards$new(lrnr_glm)
-stack <- make_learner(Stack, cdf_glm, cdf_xgboost)
+
+### Test learner:
+hazard_learner <-  Lrnr_cdf_pooled_hazards$new(lrnr_xgboost)
+xgboost_fit <- hazard_learner$train(task)
+pred_xgboost <- xgboost_fit$predict(task)
+quants <- estQuantile(task=task, hazard_fit = xgboost_fit)
 
 ### Test Stack:
+stack <- make_learner(Stack, cdf_glm, cdf_xgboost)
 stack_fit <- stack$train(task)
 pred_stack <- stack_fit$predict(task)
 expect_equal(dim(pred_stack)[2], 2, tol=1)
