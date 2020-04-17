@@ -25,33 +25,41 @@ df <- cbind.data.frame(ID = seq(n), U = U, Y = as.factor(Y))
 # Create a task:
 task <- sl3_Task$new(df,
   covariates = c("U"), outcome = "Y", id = "ID",
-  folds = make_folds(n = n)
+  folds = make_folds(n = n, V=5)
 )
 
 # Create a library:
-grid_params <- list(
-  max_depth = c(2, 5, 8),
-  eta = c(0.005, 0.1, 0.25)
-)
-grid <- expand.grid(grid_params, KEEP.OUT.ATTRS = FALSE)
-params_default <- list(nthread = getOption("sl.cores.learners", 1))
-xgb_learners <- apply(grid, MARGIN = 1, function(params_tune) {
-  do.call(Lrnr_xgboost$new, c(params_default, as.list(params_tune)))
-})
+lrnr_xgboost <- make_learner(Lrnr_xgboost)
 lrnr_glm <- make_learner(Lrnr_glm_fast)
-learners <- unlist(list(xgb_learners, lrnr_glm))
-sl <- make_learner(Lrnr_sl, learners)
+cdf_xgboost <- Lrnr_cdf_pooled_hazards$new(lrnr_xgboost)
+cdf_glm <- Lrnr_cdf_pooled_hazards$new(lrnr_glm)
+stack <- make_learner(Stack, cdf_glm, cdf_xgboost)
 
-hazard_learner <- Lrnr_cdf_pooled_hazards$new(sl)
-hazard_fit <- hazard_learner$train(task)
-pred <- hazard_fit$predict(task)
+### Test Stack:
+stack_fit <- stack$train(task)
+pred_stack <- stack_fit$predict(task)
+expect_equal(dim(pred_stack)[2], 2, tol=1)
 
-mse <- sum((pred - true_cdfs)^2)
+### Test CV preds:
+cv_stack <- Lrnr_cv$new(stack, full_fit = TRUE)
+cv_fit <- cv_stack$train(task)
+pred_cv <- cv_fit$predict(task)
+pred_cv_f1 <- cv_fit$predict_fold(task=task, fold_number = 1)
+expect_equal(dim(pred_cv)[2], 2, tol=1)
 
-expect_equal(mse, 7.4, tol = 2)
+### Test sl preds:
+metalearner <- make_learner(Lrnr_nnls)
+sl <- Lrnr_sl$new(learners = stack,
+                  metalearner = metalearner)
+sl_fit <- sl$train(task)
+preds_sl <- sl_fit$predict()/100
 
-# Discretize the outcome:
+mse <- sum((preds_sl - true_cdfs)^2)
+expect_equal(mse, 7.53, tol = 2)
+
+### Discretize the outcome:
 # Try to discretize the learner:
+hazard_learner <-  Lrnr_cdf_pooled_hazards$new(lrnr_xgboost)
 discretize_cdf_learner <- Lrnr_cdf_discretize$new(hazard_learner,
   type = "equal_mass",
   n_bins = 20
@@ -61,4 +69,4 @@ pred_discretize_cdf <- fit_discretize_cdf$predict()
 
 mse_2 <- sum((pred_discretize_cdf - true_cdfs)^2)
 
-expect_equal(mse_2, 7.2, tol = 2)
+expect_equal(mse_2, 9.49, tol = 2)

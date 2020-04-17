@@ -95,51 +95,96 @@ Lrnr_cdf_pooled_hazards <- R6Class(
 
       outcome_level <- match(task$data$Y, levels)
       
-      prediction <- apply(raw_preds, 2, function(raw_pred){
+      # Rows are outcomes sorted as observed, columns are "times"/level of cdf
+      predmat <- matrix(raw_preds, nrow = task$nrow, byrow = FALSE)
+      t <- ncol(predmat)
+      obs <- nrow(predmat)
+
+      # probability of surviving until time t
+      psurv <- t(apply(1 - predmat, 1, cumprod))
+      psurv <- cbind(1, psurv)[, seq_len(ncol(predmat))]
+      predictions <- 1 - psurv
+      
+      # predictions <- psurv * predmat
+      # predictions <- self$normalize_rows(predictions)
+      # predictions <-  1-predictions
+      
+      # Find the closest value if NAs
+      if (anyNA(outcome_level)) {
+        outcome_level <- findInterval(
+          as.numeric(levels(task$data$Y))[task$data$Y],
+          as.numeric(levels)
+        )
+      }
+      
+      # Scale if necessary
+      if (levels_n > t) {
+        outcome_level <- round(scales::rescale(outcome_level,
+                                       to = c(1, t)
+        ))
+      } else if (levels_n < t) {
+        outcome_level <- round(scales::rescale(outcome_level,
+                                       to = c(1, levels_n)
+        ))
+      }
+      
+      est <- matrix(NA, nrow = obs, ncol = 1)
+      for (i in 1:obs) {
+        est[i] <- predictions[i, outcome_level[i]]
+      }
+      
+      # Potentially rescale
+      if (max(est) < 0.6) {
+        est <- self$rescale(est)
+      }
+      
+      prediction <- est
+      
+      #prediction <- apply(raw_preds, 2, function(raw_pred){
         # Rows are outcomes sorted as observed, columns are "times"/level of cdf
-        predmat <- matrix(raw_pred, nrow = task$nrow, byrow = FALSE)
-        t <- ncol(predmat)
+      #  predmat <- matrix(raw_pred, nrow = task$nrow, byrow = FALSE)
+      #  t <- ncol(predmat)
         
         # probability of surviving until time t
-        psurv <- t(apply(1 - predmat, 1, cumprod))
-        psurv <- cbind(1, psurv)[, seq_len(ncol(predmat))]
-        predictions <- 1 - psurv
+      #  psurv <- t(apply(1 - predmat, 1, cumprod))
+      #  psurv <- cbind(1, psurv)[, seq_len(ncol(predmat))]
+      #  predictions <- 1 - psurv
         
         # predictions <- psurv * predmat
         # predictions <- self$normalize_rows(predictions)
         # predictions <-  1-predictions
         
         # Find the closest value if NAs
-        if (anyNA(outcome_level)) {
-          outcome_level <- findInterval(
-            as.numeric(levels(task$data$Y))[task$data$Y],
-            as.numeric(levels)
-          )
-        }
+      #  if (anyNA(outcome_level)) {
+      #    outcome_level <- findInterval(
+      #      as.numeric(levels(task$data$Y))[task$data$Y],
+      #      as.numeric(levels)
+      #    )
+      #  }
         
         # Scale if necessary
-        if (levels_n > t) {
-          outcome_level <- round(rescale(outcome_level,
-                                         to = c(1, t)
-          ))
-        } else if (levels_n < t) {
-          outcome_level <- round(rescale(outcome_level,
-                                         to = c(1, levels_n)
-          ))
-        }
+      #  if (levels_n > t) {
+      #    outcome_level <- round(rescale(outcome_level,
+      #                                   to = c(1, t)
+      #    ))
+      #  } else if (levels_n < t) {
+      #    outcome_level <- round(rescale(outcome_level,
+      #                                   to = c(1, levels_n)
+      #    ))
+      #  }
         
-        est <- matrix(NA, nrow = t, ncol = 1)
-        for (i in 1:t) {
-          est[i] <- predictions[i, outcome_level[i]]
-        }
+      #  est <- matrix(NA, nrow = t, ncol = 1)
+      #  for (i in 1:t) {
+      #    est[i] <- predictions[i, outcome_level[i]]
+      #  }
         
         # Potentially rescale
-        if (max(est) < 0.6) {
-          est <- self$rescale(est)
-        }
+      #  if (max(est) < 0.6) {
+      #    est <- self$rescale(est)
+      #  }
         
-        est
-      })
+      #  est
+      #})
       return(prediction)
     },
     .required_packages = c()

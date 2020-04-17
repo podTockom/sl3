@@ -78,14 +78,26 @@ Lrnr_cdf_discretize <- R6Class(
       private$.breaks <- discretized$breaks
 
       # make discretized task
-      new_columns <-
-        task$add_columns(data.table(
-          Y_discretize = factor(discretized$x_discrete_int)
-        ))
-      discrete_task <- task$next_in_chain(
+      
+      #Issue with this again: can't find Y_discretize
+      #new_columns <-
+      #  task$add_columns(data.table(
+      #    Y_discretize = factor(discretized$x_discrete_int)
+      #  ))
+      #discrete_task <- task$next_in_chain(
+      #  outcome = "Y_discretize",
+      #  column_names = new_columns
+      #)
+      
+      data <- cbind.data.frame(task$data, Y_discretize=factor(discretized$x_discrete_int))
+      
+      discrete_task <- sl3_Task$new(
+        data = data,
+        covariates = task$nodes$covariates,
         outcome = "Y_discretize",
-        column_names = new_columns
+        folds = task$folds
       )
+
       # fit categorical learner to discretized task
       categorical_fit <- self$params$categorical_learner$train(discrete_task)
 
@@ -112,16 +124,28 @@ Lrnr_cdf_discretize <- R6Class(
         )
       }
 
-      new_columns <-
-        task$add_columns(data.table(
-          Y_discretize =
-            factor(discretized$x_discrete_int)
-        ))
-      discrete_task <- task$next_in_chain(
+      # make discretized task
+      
+      #Issue with this again: can't find Y_discretize
+      #new_columns <-
+      #  task$add_columns(data.table(
+      #    Y_discretize =
+      #      factor(discretized$x_discrete_int)
+      #  ))
+      #discrete_task <- task$next_in_chain(
+      #  outcome = "Y_discretize",
+      #  column_names = new_columns
+      #)
+      
+      data <- cbind.data.frame(task$data, Y_discretize=factor(discretized$x_discrete_int))
+      
+      discrete_task <- sl3_Task$new(
+        data = data,
+        covariates = task$nodes$covariates,
         outcome = "Y_discretize",
-        column_names = new_columns
+        folds = task$folds
       )
-
+      
       # predict categorical learner on discretized task
       raw_preds <- self$fit_object$predict(discrete_task)
 
